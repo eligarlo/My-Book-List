@@ -110,6 +110,17 @@ class Store {
 
         localStorage.setItem('books', JSON.stringify(books));
     }
+
+    static isbnExists(isbn) {
+        const books = Store.getBooks();
+        let isbnExists = false;
+
+        books.forEach(book => {
+            if (isbn === book.isbn) isbnExists = true;
+        });
+
+        return isbnExists;
+    }
 }
 
 // Event: Display Books
@@ -124,9 +135,13 @@ document.querySelector('#book-form').addEventListener('submit', e => {
     const author = document.querySelector('#author').value;
     const isbn = document.querySelector('#isbn').value;
 
-    // Validate
+    // Validate the all inputs are filled
     if (title === '' || author === '' || isbn === '') {
         UI.showAlert('Please fill in all fields', 'danger');
+    }
+    // Validate if the isbn already exists
+    else if (Store.isbnExists(isbn)) {
+        UI.showAlert('Sorry, that isbn already exists, please enter a different one', 'danger');
     } else {
         // Instantiate book
         const book = new Book(title, author, isbn);
