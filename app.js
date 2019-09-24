@@ -40,16 +40,40 @@ class UI {
         div.appendChild(document.createTextNode(message));
         const container = document.querySelector('.container');
         const form = document.querySelector('#book-form');
-        fadeIn(container.insertBefore(div, form));
+        UI.fadeIn(container.insertBefore(div, form));
         // Vanish in 3 seconds
 
-        setTimeout(() => fadeOut(document.querySelector('.alert')), 3000);
+        setTimeout(() => UI.fadeOut(document.querySelector('.alert')), 3000);
     }
 
     static clearFields() {
         document.querySelector('#title').value = '';
         document.querySelector('#author').value = '';
         document.querySelector('#isbn').value = '';
+    }
+
+    static fadeIn(el) {
+        el.style.opacity = 0;
+
+        (function fade() {
+            let val = Number(el.style.opacity);
+            if (!((val += .1) > 1)) {
+                el.style.opacity = String(val);
+                requestAnimationFrame(fade);
+            }
+        })();
+    }
+
+    static fadeOut(el) {
+        el.style.opacity = '1';
+
+        (function fade() {
+            if ((el.style.opacity -= '.1') < 0) {
+                el.remove();
+            } else {
+                requestAnimationFrame(fade);
+            }
+        })();
     }
 }
 
@@ -136,27 +160,3 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     });
 });
-
-const fadeOut = el =>{
-    el.style.opacity = '1';
-
-    (function fade() {
-        if ((el.style.opacity -= '.1') < 0) {
-            el.remove();
-        } else {
-            requestAnimationFrame(fade);
-        }
-    })();
-};
-
-const fadeIn = el =>{
-    el.style.opacity = 0;
-
-    (function fade() {
-        let val = Number(el.style.opacity);
-        if (!((val += .1) > 1)) {
-            el.style.opacity = String(val);
-            requestAnimationFrame(fade);
-        }
-    })();
-};
