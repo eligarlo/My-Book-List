@@ -40,16 +40,20 @@ class UI {
         return false;
     }
 
-    static showAlert(message, className) {
+    static showAlert(message, className, callback) {
+        // If there is a previous alert, don't pile them in column
+        // TODO: If the type of the alert different show the last alert triggered
+        if (document.querySelector('.alert')) return;
+
         const div = document.createElement('div');
         div.className = `alert alert-${className}`;
         div.appendChild(document.createTextNode(message));
         const container = document.querySelector('.container');
         const form = document.querySelector('#book-form');
         UI.fadeIn(container.insertBefore(div, form));
-        // Vanish in 3 seconds
-
-        setTimeout(() => UI.fadeOut(document.querySelector('.alert')), 3000);
+        form.style.marginTop = '0';
+        // if there is callback use it
+        callback && callback();
     }
 
     static clearFields() {
@@ -59,7 +63,7 @@ class UI {
     }
 
     static fadeIn(el) {
-        el.style.opacity = 0;
+        el.style.opacity = '0';
 
         (function fade() {
             let val = Number(el.style.opacity);
@@ -80,6 +84,18 @@ class UI {
                 requestAnimationFrame(fade);
             }
         })();
+    }
+
+    static clearAlertTimeout() {
+        // Vanish in 3 seconds
+        setTimeout(() => UI.fadeOut(document.querySelector('.alert')), 3000);
+    }
+
+    static clearAlertType(el) {
+        // Vanish after user types something
+        el.addEventListener('keyup', () => {
+            if (el.value !== '' && document.querySelector('.alert')) UI.fadeOut(document.querySelector('.alert'));
+        });
     }
 }
 
@@ -137,33 +153,28 @@ document.querySelector('#book-form').addEventListener('submit', e => {
     e.preventDefault();
 
     //Get form values
-    const title = document.querySelector('#title').value;
-    const author = document.querySelector('#author').value;
-    const isbn = document.querySelector('#isbn').value;
+    const title = document.querySelector('#title');
+    const author = document.querySelector('#author');
+    const isbn = document.querySelector('#isbn');
 
     // Validate the all inputs are filled
-    if (title === '' || author === '' || isbn === '') {
-        UI.showAlert('Please fill in all fields', 'danger');
-    }
+    if (title.value === '') return UI.showAlert('Please fill in all fields', 'danger', UI.clearAlertType(title));
+    if (author.value === '') return UI.showAlert('Please fill in all fields', 'danger', UI.clearAlertType(author));
+    if (isbn.value === '') return UI.showAlert('Please fill in all fields', 'danger', UI.clearAlertType(isbn));
     // Validate if the isbn already exists
-    else if (Store.isbnExists(isbn)) {
-        UI.showAlert('Sorry, that isbn already exists, please enter a different one', 'danger');
-    } else {
-        // Instantiate book
-        const book = new Book(title, author, isbn);
+    if (Store.isbnExists(isbn.value)) return UI.showAlert('Sorry, that isbn already exists', 'danger', UI.clearAlertType(isbn));
 
-        // Add book to UI
-        UI.addBookToList(book);
+    // Instantiate book
+    const book = new Book(title.value, author.value, isbn.value);
+    // Add book to UI
+    UI.addBookToList(book);
+    // Add book to store
+    Store.addBook(book);
+    // Show success message
+    UI.showAlert('Book Added', 'success', UI.clearAlertTimeout);
+    // Clear fields
+    UI.clearFields();
 
-        // Add book to store
-        Store.addBook(book);
-
-        // Show success message
-        UI.showAlert('Book Added', 'success');
-
-        // Clear fields
-        UI.clearFields();
-    }
 });
 
 // Event: Remove a Book
@@ -172,5 +183,5 @@ document.querySelector('#book-list').addEventListener('click' ,e => {
     Store.removeBook(e.target.dataset.isbn);
 
     // Remove book from UI and Show success message
-    if (UI.deleteBook(e.target)) UI.showAlert('Book Removed', 'success');
+    if (UI.deleteBook(e.target)) UI.showAlert('Book Removed', 'success', UI.clearAlertTimeout);
 });
