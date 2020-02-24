@@ -1,187 +1,106 @@
-// Book Class: Represents a Book
-class Book {
-    constructor(title, author, isbn) {
-        this.title = title;
-        this.author = author;
-        this.isbn = isbn;
+// Book Constructor
+function Book(title, author, isbn) {
+    this.title = title;
+    this.author = author;
+    this.isbn = isbn;
+}
+
+// UI Constructor
+function UI() { }
+
+// Add Book to List
+UI.prototype.addBookToList = function (book) {
+    const list = document.getElementById('book-list');
+    // Create tr element
+    const row = document.createElement('tr');
+    // Insert cols
+    row.innerHTML = `
+    <td>${book.title}</td>
+    <td>${book.author}</td>
+    <td>${book.isbn}</td>
+    <td><a href="#" class="delete">X</a></td>
+    `;
+
+    list.appendChild(row);
+}
+
+// Clear form fields
+UI.prototype.clearFields = function () {
+    document.getElementById('title').value = '';
+    document.getElementById('author').value = '';
+    document.getElementById('isbn').value = '';
+}
+
+// Show Alert
+UI.prototype.showAlert = function (message, className) {
+    // Create div
+    const div = document.createElement('div');
+    // Add classes
+    div.className = `alert ${className}`;
+    // Add Text
+    div.appendChild(document.createTextNode(message));
+    // Get parent
+    const container = document.querySelector('.container');
+    // Get form
+    const form = document.getElementById('book-form');
+    // Insert alert
+    container.insertBefore(div, form);
+
+    // Timeout after 3 sec
+    setTimeout(function () {
+        document.querySelector('.alert').remove();
+    }, 3000);
+}
+
+// Delete Book
+UI.prototype.deleteBook = function (target) {
+    if (target.className === 'delete') {
+        target.parentElement.parentElement.remove();
     }
 }
 
-// UI Class: Handle UI Tasks
-class UI {
-    static displayBooks() {
-        const books = Store.getBooks();
-
-        books.forEach(book => UI.addBookToList(book));
-    }
-
-    static addBookToList(book) {
-        const list = document.querySelector('#book-list');
-
-        const row = document.createElement('tr');
-
-        row.innerHTML = `
-            <td>${book.title}</td>
-            <td>${book.author}</td>
-            <td>${book.isbn}</td>
-            <td><a href="#" class="btn btn-danger btn-sm delete" data-isbn="${book.isbn}">X</a></td>
-        `;
-
-        row.setAttribute("data-row", `${book.isbn}`);
-
-        list.appendChild(row);
-    }
-
-    static deleteBook(el) {
-        if (el.classList.contains('delete')) {
-            document.querySelector(`tr[data-row="${el.dataset.isbn}"]`).remove();
-            return true;
-        }
-        return false;
-    }
-
-    static showAlert(message, className, callback) {
-        // If there is a previous alert, don't pile them in column
-        // TODO: If the type of the alert different show the last alert triggered
-        if (document.querySelector('.alert')) return;
-
-        const div = document.createElement('div');
-        div.className = `alert alert-${className}`;
-        div.appendChild(document.createTextNode(message));
-        const container = document.querySelector('.container');
-        const form = document.querySelector('#book-form');
-        UI.fadeIn(container.insertBefore(div, form));
-        form.style.marginTop = '0';
-        // if there is callback use it
-        callback && callback();
-    }
-
-    static clearFields() {
-        document.querySelector('#title').value = '';
-        document.querySelector('#author').value = '';
-        document.querySelector('#isbn').value = '';
-    }
-
-    static fadeIn(el) {
-        el.style.opacity = '0';
-
-        (function fade() {
-            let val = Number(el.style.opacity);
-            if (!((val += .1) > 1)) {
-                el.style.opacity = String(val);
-                requestAnimationFrame(fade);
-            }
-        })();
-    }
-
-    static fadeOut(el) {
-        el.style.opacity = '1';
-
-        (function fade() {
-            if ((el.style.opacity -= '.1') < 0) {
-                el.remove();
-            } else {
-                requestAnimationFrame(fade);
-            }
-        })();
-    }
-
-    static clearAlertTimeout() {
-        // Vanish in 3 seconds
-        setTimeout(() => UI.fadeOut(document.querySelector('.alert')), 3000);
-    }
-
-    static clearAlertType(el) {
-        // Vanish after user types something
-        el.addEventListener('keyup', () => {
-            if (el.value !== '' && document.querySelector('.alert')) UI.fadeOut(document.querySelector('.alert'));
-        });
-    }
-}
-
-
-// Store Class: Handles Storage
-class Store {
-    static getBooks() {
-        let books;
-        if (localStorage.getItem('books') === null) {
-            books = [];
-        } else {
-            books = JSON.parse(localStorage.getItem('books'));
-        }
-
-        return books;
-    }
-
-    static addBook(book) {
-        const books = Store.getBooks();
-
-        books.push(book);
-
-        localStorage.setItem('books', JSON.stringify(books));
-    }
-
-    static removeBook(isbn) {
-        const books = Store.getBooks();
-
-        books.forEach((book, index) => {
-            if (book.isbn === isbn) {
-                books.splice(index, 1);
-            }
-        });
-
-        localStorage.setItem('books', JSON.stringify(books));
-    }
-
-    static isbnExists(isbn) {
-        const books = Store.getBooks();
-        let isbnExists = false;
-
-        books.forEach(book => {
-            if (isbn === book.isbn) isbnExists = true;
-        });
-
-        return isbnExists;
-    }
-}
-
-// Event: Display Books
-document.addEventListener('DOMContentLoaded', UI.displayBooks);
-
-// Event: Add a Book
-document.querySelector('#book-form').addEventListener('submit', e => {
-    e.preventDefault();
-
-    //Get form values
-    const title = document.querySelector('#title');
-    const author = document.querySelector('#author');
-    const isbn = document.querySelector('#isbn');
-
-    // Validate the all inputs are filled
-    if (title.value === '') return UI.showAlert('Please fill in all fields', 'danger', UI.clearAlertType(title));
-    if (author.value === '') return UI.showAlert('Please fill in all fields', 'danger', UI.clearAlertType(author));
-    if (isbn.value === '') return UI.showAlert('Please fill in all fields', 'danger', UI.clearAlertType(isbn));
-    // Validate if the isbn already exists
-    if (Store.isbnExists(isbn.value)) return UI.showAlert('Sorry, that isbn already exists', 'danger', UI.clearAlertType(isbn));
+// Event Listener for add book
+document.getElementById('book-form').addEventListener('submit', function (e) {
+    // Get form values
+    const title = document.getElementById('title').value,
+        author = document.getElementById('author').value,
+        isbn = document.getElementById('isbn').value;
 
     // Instantiate book
-    const book = new Book(title.value, author.value, isbn.value);
-    // Add book to UI
-    UI.addBookToList(book);
-    // Add book to store
-    Store.addBook(book);
-    // Show success message
-    UI.showAlert('Book Added', 'success', UI.clearAlertTimeout);
-    // Clear fields
-    UI.clearFields();
+    const book = new Book(title, author, isbn);
 
+    // Instantiate UI
+    const ui = new UI();
+
+    // Validate
+    if (title === '' || author === '' || isbn === '') {
+        // Error alert
+        ui.showAlert('Please fill in all fields', 'error');
+    } else {
+        // Add book to list
+        ui.addBookToList(book);
+
+        // Show success
+        ui.showAlert('Book Added!', 'success');
+
+        // Clear fields
+        ui.clearFields();
+    }
+
+    e.preventDefault()
 });
 
-// Event: Remove a Book
-document.querySelector('#book-list').addEventListener('click' ,e => {
-    // Remove book from store
-    Store.removeBook(e.target.dataset.isbn);
+// Event Listener for delete
+document.getElementById('book-list').addEventListener('click', function (e) {
 
-    // Remove book from UI and Show success message
-    if (UI.deleteBook(e.target)) UI.showAlert('Book Removed', 'success', UI.clearAlertTimeout);
+    // Instantiate UI
+    const ui = new UI();
+
+    // Delete book
+    ui.deleteBook(e.target);
+
+    // Show alert
+    ui.showAlert('Book Removed!', 'success');
+
+    e.preventDefault()
 });
